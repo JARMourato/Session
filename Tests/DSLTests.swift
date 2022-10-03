@@ -13,47 +13,47 @@ final class DSLTests: XCTestCase {
 
     func test_if() {
         // Given
-        let disableWaitingForConnectivity = true
+        let enableWaitingForConnectivity = true
         // When
         let sessionOne = Session {
-            if disableWaitingForConnectivity {
-                Disable.waitingForConnectivity
+            if enableWaitingForConnectivity {
+                Enable.waitingForConnectivity
             }
         }
         let sessionTwo = Session()
         // Then
-        XCTAssertFalse(sessionOne.configuration.waitsForConnectivity)
-        XCTAssertTrue(sessionTwo.configuration.waitsForConnectivity)
+        XCTAssertTrue(sessionOne.configuration.waitsForConnectivity)
+        XCTAssertFalse(sessionTwo.configuration.waitsForConnectivity)
     }
 
     func test_if_else() {
         // Given
-        let disableWaitingForConnectivity = true
+        let enableWaitingForConnectivity = false
         // When
         let sessionOne = Session {
-            if !disableWaitingForConnectivity {
-                Disable.waitingForConnectivity
+            if !enableWaitingForConnectivity {
+                Enable.waitingForConnectivity
             } else {
                 Disable.constrainedNetworkAccess
             }
         }
         let sessionTwo = Session {
-            if disableWaitingForConnectivity {
-                Disable.waitingForConnectivity
+            if enableWaitingForConnectivity {
+                Enable.waitingForConnectivity
             } else {
                 Disable.constrainedNetworkAccess
             }
         }
         // Then
         XCTAssertTrue(sessionOne.configuration.waitsForConnectivity)
-        XCTAssertFalse(sessionOne.configuration.allowsConstrainedNetworkAccess)
+        XCTAssertTrue(sessionOne.configuration.allowsConstrainedNetworkAccess)
         XCTAssertFalse(sessionTwo.configuration.waitsForConnectivity)
-        XCTAssertTrue(sessionTwo.configuration.allowsConstrainedNetworkAccess)
+        XCTAssertFalse(sessionTwo.configuration.allowsConstrainedNetworkAccess)
     }
 
     func test_optional() {
         // Given
-        let configurationsOne: [Configuration]? = [Disable.waitingForConnectivity]
+        let configurationsOne: [Configuration]? = [Enable.waitingForConnectivity]
         let configurationsTwo: [Configuration]? = nil
         // When
         let sessionOne = Session {
@@ -67,13 +67,13 @@ final class DSLTests: XCTestCase {
             }
         }
         // Then
-        XCTAssertFalse(sessionOne.configuration.waitsForConnectivity)
-        XCTAssertTrue(sessionTwo.configuration.waitsForConnectivity)
+        XCTAssertTrue(sessionOne.configuration.waitsForConnectivity)
+        XCTAssertFalse(sessionTwo.configuration.waitsForConnectivity)
     }
 
     func test_availability() {
         // Given
-        let configs: [Configuration] = [Disable.waitingForConnectivity]
+        let configs: [Configuration] = [Enable.waitingForConnectivity]
         // When
         let sessionOne = Session {
             if #available(iOS 15, *) {
@@ -88,13 +88,13 @@ final class DSLTests: XCTestCase {
             }
         }
         // Then
-        XCTAssertFalse(sessionOne.configuration.waitsForConnectivity)
-        XCTAssertTrue(sessionTwo.configuration.waitsForConnectivity)
+        XCTAssertTrue(sessionOne.configuration.waitsForConnectivity)
+        XCTAssertFalse(sessionTwo.configuration.waitsForConnectivity)
     }
 
     func test_array() {
         // Given
-        let configs = [Disable.waitingForConnectivity, Disable.constrainedNetworkAccess]
+        let configs: [Configuration] = [Enable.waitingForConnectivity, Disable.constrainedNetworkAccess]
         // When
         let sessionOne = Session {
             for item in configs {
@@ -103,9 +103,9 @@ final class DSLTests: XCTestCase {
         }
         let sessionTwo = Session()
         // Then
-        XCTAssertFalse(sessionOne.configuration.waitsForConnectivity)
         XCTAssertFalse(sessionOne.configuration.allowsConstrainedNetworkAccess)
-        XCTAssertTrue(sessionTwo.configuration.waitsForConnectivity)
+        XCTAssertTrue(sessionOne.configuration.waitsForConnectivity)
         XCTAssertTrue(sessionTwo.configuration.allowsConstrainedNetworkAccess)
+        XCTAssertFalse(sessionTwo.configuration.waitsForConnectivity)
     }
 }

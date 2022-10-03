@@ -7,15 +7,20 @@ public protocol Configuration {}
 /// The default session configuration uses the app shared URL cache object, use this to set your own cache.
 public struct Cache: Configuration {
     let urlCache: URLCache
+
+    public init(urlCache: URLCache) {
+        self.urlCache = urlCache
+    }
 }
 
 /// Sets the delegates at Session level and at a Task Level
 public enum Delegate: Configuration {
     case session(URLSessionDelegate)
+    /// Note: only available for iOS 15 or above
     case task(URLSessionTaskDelegate)
 }
 
-/// Sets a URLSession delegate
+/// Disables default session behaviors
 public enum Disable: Configuration {
     /// Disables the session to connect using a constrained network interface. A constrained network interface
     /// is one where the user turns on “Low Data Mode” in the device settings.
@@ -23,7 +28,11 @@ public enum Disable: Configuration {
     /// Disables the session to connect over an “expensive” network interface. The system decides
     /// what an expensive network is but typically it’s a cellular or personal hotspot.
     case expensiveNetworkAccess
-    /// Causes the session to fail immediately instead of waiting for connectivity, which is preferable to testing for reachability.
+}
+
+/// Enables additional session behaviors
+public enum Enable: Configuration {
+    /// Causes the session to waiting for connectivity instead of failling immediately, which would be preferable to testing for reachability.
     /// Note: The `Timeout.resource` configuration determines how long the session will wait for connectivity. Background sessions
     /// always wait for connectivity.
     case waitingForConnectivity
@@ -32,6 +41,10 @@ public enum Disable: Configuration {
 /// Sets custom HTTP headers to all of your requests.
 public struct Headers: Configuration {
     let httpHeaders: [String: String]
+
+    public init(httpHeaders: [String: String]) {
+        self.httpHeaders = httpHeaders
+    }
 }
 
 /// These will be used as a base configuration for the `URLSessionConfiguration` otherwise, the `URLSessionConfiguration.default` will be used.
@@ -43,8 +56,7 @@ public enum Preset: Configuration {
     ///  - Parameter isDiscretionary: if set to `true` the system will decide when to start the transfer, useful for non-urgent tasks.
     case background(identifier: String, sharedContainerIdentifier: String? = nil, isDiscretionary: Bool = true)
     /// To be able to inject a configuration, in case there are options not provided by the framework.
-    /// All options that are provided by the framework will override the custom sessoin configuration provided values
-    /// even if no option is provided, in which case the default configuration values for those options is assigned
+    /// All options that are provided by the framework will override the custom session configuration provided values
     case custom(URLSessionConfiguration)
     /// An ephemeral session keeps cache data, credentials or other session related data in memory. It’s never written to disk which helps protects user privacy.
     /// You destroy the session data when you invalidate the session. This is similar to how a web browser behaves when private browsing.
@@ -54,6 +66,10 @@ public enum Preset: Configuration {
 /// An array of extra protocol subclasses that handle requests in a session.
 public struct ProtocolClasses: Configuration {
     let classes: [AnyClass]
+
+    public init(classes: [AnyClass]) {
+        self.classes = classes
+    }
 }
 
 /// To set per session timeouts
@@ -67,16 +83,16 @@ public enum Timeout: Configuration {
 // MARK: - Session Creation
 
 internal func createSession(from configs: [Configuration]) -> (URLSession, URLSessionTaskDelegate?) {
-    // Set all user configurations
+    // Set all user configurations override if needed
     let configuration = configs.urlSessionConfiguration
-    configuration.allowsConstrainedNetworkAccess = configs.allowConstrainedNetworkAccess
-    configuration.allowsExpensiveNetworkAccess = configs.allowExpensiveNetworkAccess
-    configuration.httpAdditionalHeaders = configs.httpAdditionalHeaders
-    configuration.protocolClasses = configs.protocolClasses
-    configuration.timeoutIntervalForRequest = configs.timeoutIntervalForRequest
-    configuration.timeoutIntervalForResource = configs.timeoutIntervalForResource
-    configuration.urlCache = configs.cache
-    configuration.waitsForConnectivity = configs.waitsForConnectivity
+    configuration.overrideValueIfNeededFor(\.allowsConstrainedNetworkAccess, with: configs.allowsConstrainedNetworkAccess)
+    configuration.overrideValueIfNeededFor(\.allowsExpensiveNetworkAccess, with: configs.allowsExpensiveNetworkAccess)
+    configuration.overrideValueIfNeededFor(\.httpAdditionalHeaders, with: configs.httpAdditionalHeaders)
+    configuration.overrideValueIfNeededFor(\.protocolClasses, with: configs.protocolClasses)
+    configuration.overrideValueIfNeededFor(\.timeoutIntervalForRequest, with: configs.timeoutIntervalForRequest)
+    configuration.overrideValueIfNeededFor(\.timeoutIntervalForResource, with: configs.timeoutIntervalForResource)
+    configuration.overrideValueIfNeededFor(\.urlCache, with: configs.cache)
+    configuration.overrideValueIfNeededFor(\.waitsForConnectivity, with: configs.waitsForConnectivity)
     // Create URLSession
     let session = URLSession(configuration: configuration, delegate: configs.sessionDelegate, delegateQueue: nil)
     return (session, configs.taskDelegate)
@@ -84,7 +100,7 @@ internal func createSession(from configs: [Configuration]) -> (URLSession, URLSe
 
 // MARK: Helpers for configuration array
 
-extension Array where Element == Configuration {
+extension [Configuration] {
     // MARK: Cache
 
     var cache: URLCache? { compactMap { $0 as? Cache }.first?.urlCache }
@@ -107,12 +123,25 @@ extension Array where Element == Configuration {
         }.first
     }
 
-    // MARK: Disabled
+    // MARK: Disabled/Enabled
 
     var disabled: [Disable] { compactMap { $0 as? Disable } }
-    var allowConstrainedNetworkAccess: Bool { !disabled.contains(.constrainedNetworkAccess) }
-    var allowExpensiveNetworkAccess: Bool { !disabled.contains(.expensiveNetworkAccess) }
-    var waitsForConnectivity: Bool { !disabled.contains(.waitingForConnectivity) }
+    var enabled: [Enable] { compactMap { $0 as? Enable } }
+
+    var allowsConstrainedNetworkAccess: Bool? {
+        guard let _ = disabled.firstIndex(of: .constrainedNetworkAccess) else { return nil }
+        return false
+    }
+
+    var allowsExpensiveNetworkAccess: Bool? {
+        guard let _ = disabled.firstIndex(of: .expensiveNetworkAccess) else { return nil }
+        return false
+    }
+
+    var waitsForConnectivity: Bool? {
+        guard let _ = enabled.firstIndex(of: .waitingForConnectivity) else { return nil }
+        return true
+    }
 
     // MARK: Headers
 
@@ -134,18 +163,18 @@ extension Array where Element == Configuration {
 
     var timeouts: [Timeout] { compactMap { $0 as? Timeout } }
 
-    var timeoutIntervalForRequest: TimeInterval {
+    var timeoutIntervalForRequest: TimeInterval? {
         timeouts.compactMap { timeout in
             guard case let .request(seconds) = timeout else { return nil }
             return TimeInterval(seconds)
-        }.first ?? ConfigDefaults.timeoutIntervalForRequest
+        }.first
     }
 
-    var timeoutIntervalForResource: TimeInterval {
+    var timeoutIntervalForResource: TimeInterval? {
         timeouts.compactMap { timeout in
             guard case let .resource(seconds) = timeout else { return nil }
             return TimeInterval(seconds)
-        }.first ?? ConfigDefaults.timeoutIntervalForResource
+        }.first
     }
 }
 
@@ -173,3 +202,21 @@ internal enum ConfigDefaults {
     static var timeoutIntervalForRequest: TimeInterval { 60 }
     static var timeoutIntervalForResource: TimeInterval { 604_800 } // 7 days
 }
+
+// MARK: Helper for configuration values override
+
+extension URLSessionConfiguration {
+    func overrideValueIfNeededFor<T>(_ keypath: ReferenceWritableKeyPath<URLSessionConfiguration, T>, with optionalValue: T?) {
+        guard let optionalValue else { return }
+        self[keyPath: keypath] = optionalValue
+    }
+
+    func overrideValueIfNeededFor<T>(_ keypath: ReferenceWritableKeyPath<URLSessionConfiguration, T?>, with optionalValue: T?) {
+        guard case let .some(value) = optionalValue else { return }
+        self[keyPath: keypath] = value
+    }
+}
+
+protocol OptionalProtocol {}
+
+extension Optional: OptionalProtocol {}
