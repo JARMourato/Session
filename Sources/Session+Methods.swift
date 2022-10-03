@@ -11,7 +11,7 @@ public extension Session {
         let request = try r._makeURLRequest()
         let response: DataResponse
 
-        if isConcurrencyAvailable() {
+        if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableConcurrency {
             response = try await urlSession.data(for: request, delegate: taskDelegate)
         } else {
             response = try await asyncify { urlSession.dataTask(with: request, completionHandler: $0) }
@@ -32,7 +32,7 @@ public extension Session {
         let request = try r._makeURLRequest()
         let response: DownloadResponse
 
-        if isConcurrencyAvailable() {
+        if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableConcurrency {
             response = try await urlSession.download(for: request, delegate: taskDelegate)
         } else {
             response = try await asyncify { urlSession.downloadTask(with: request, completionHandler: $0) }
@@ -44,7 +44,7 @@ public extension Session {
     func download(resumeFrom data: Data) async throws -> DownloadResponse {
         let response: DownloadResponse
 
-        if isConcurrencyAvailable() {
+        if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableConcurrency {
             response = try await urlSession.download(resumeFrom: data, delegate: taskDelegate)
         } else {
             response = try await asyncify { urlSession.downloadTask(withResumeData: data, completionHandler: $0) }
@@ -57,11 +57,11 @@ public extension Session {
 // MARK: - Upload Tasks
 
 public extension Session {
-    func upload(with r: Requestable, fromFile fileURL: URL) async throws -> UploadResponse {
+    func upload(for r: Requestable, fromFile fileURL: URL) async throws -> UploadResponse {
         let request = try r._makeURLRequest()
         let response: UploadResponse
 
-        if isConcurrencyAvailable() {
+        if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableConcurrency {
             response = try await urlSession.upload(for: request, fromFile: fileURL, delegate: taskDelegate)
         } else {
             response = try await asyncify { urlSession.uploadTask(with: request, fromFile: fileURL, completionHandler: $0) }
@@ -70,11 +70,11 @@ public extension Session {
         return response
     }
 
-    func upload(with r: Requestable, fromData bodyData: Data) async throws -> UploadResponse {
+    func upload(for r: Requestable, fromData bodyData: Data) async throws -> UploadResponse {
         let request = try r._makeURLRequest()
         let response: UploadResponse
 
-        if isConcurrencyAvailable() {
+        if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableConcurrency {
             response = try await urlSession.upload(for: request, from: bodyData, delegate: taskDelegate)
         } else {
             response = try await asyncify { urlSession.uploadTask(with: request, from: bodyData, completionHandler: $0) }
@@ -87,18 +87,18 @@ public extension Session {
 // MARK: - Internal Helpers
 
 extension Session {
-    func asyncify<D>(_ syncTaskBuilder: (@escaping (D?, URLResponse?, Error?) -> Void) -> SessionTask) async throws -> (D, URLResponse) {
+    func asyncify<D>(_ syncTaskBuilder: (@escaping @Sendable (D?, URLResponse?, Error?) -> Void) -> SessionTask) async throws -> (D, URLResponse) {
         return try await withCheckedThrowingContinuation { continuation in
             let task = syncTaskBuilder { data, response, error in
-                if let error = error {
+                if let error {
                     continuation.resume(throwing: error)
-                } else if let data = data, let response = response {
+                } else if let data, let response {
                     continuation.resume(returning: (data, response))
                 } else {
                     continuation.resume(throwing: SessionError.invalidResponse)
                 }
             }
-            task.delegate = taskDelegate
+            task.taskDelegate = taskDelegate
             task.resume()
         }
     }
@@ -120,18 +120,26 @@ extension Requestable {
 
 extension Session {
     static var disableConcurrency: Bool = false
-
-    func isConcurrencyAvailable() -> Bool {
-        guard #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableConcurrency else {
-            return false
-        }
-        return true
-    }
 }
 
 protocol SessionTask: AnyObject {
-    var delegate: URLSessionTaskDelegate? { get set }
+    var taskDelegate: URLSessionTaskDelegate? { get set }
     func resume()
 }
 
-extension URLSessionTask: SessionTask {}
+extension URLSessionTask: SessionTask {
+    var taskDelegate: URLSessionTaskDelegate? {
+        get {
+            if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *) {
+                return delegate
+            } else {
+                return nil
+            }
+        }
+        set {
+            if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *) {
+                delegate = newValue
+            }
+        }
+    }
+}
