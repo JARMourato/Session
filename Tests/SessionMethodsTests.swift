@@ -108,7 +108,7 @@ final class SessionMethodsTests: XCTestCase {
         let mData = requestResponse.data(using: .utf8)!
         MockURLProtocol.requestHandler = { _ in (mResponse, mData) }
         // When
-        let (data, response) = try await session.upload(with: request, fromData: Data())
+        let (data, response) = try await session.upload(for: request, fromData: Data())
         // Then
         XCTAssertEqual((response as? HTTPURLResponse)?.url, mResponse.url)
         XCTAssertEqual(String(data: data, encoding: .utf8), requestResponse)
@@ -121,7 +121,7 @@ final class SessionMethodsTests: XCTestCase {
         let mData = requestResponse.data(using: .utf8)!
         MockURLProtocol.requestHandler = { _ in (mResponse, mData) }
         // When
-        let (data, response) = try await session.upload(with: request, fromFile: mockURL)
+        let (data, response) = try await session.upload(for: request, fromFile: mockURL)
         // Then
         XCTAssertEqual((response as? HTTPURLResponse)?.url, mResponse.url)
         XCTAssertEqual(String(data: data, encoding: .utf8), requestResponse)
@@ -164,13 +164,14 @@ final class SessionMethodsTests: XCTestCase {
 // MARK: - Mock URLSessionTask
 
 class MockURLSessionTask: SessionTask {
-    var delegate: URLSessionTaskDelegate?
+    var taskDelegate: URLSessionTaskDelegate?
+
     let data: Data?
     let response: URLResponse?
     let error: Error?
 
     init(delegate: URLSessionTaskDelegate? = nil, data: Data?, response: URLResponse?, error: Error?) {
-        self.delegate = delegate
+        taskDelegate = delegate
         self.data = data
         self.response = response
         self.error = error
@@ -202,7 +203,7 @@ class MockURLProtocol: URLProtocol {
             // 3. Send received response to the client.
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
 
-            if let data = data {
+            if let data {
                 // 4. Send received data to the client.
                 client?.urlProtocol(self, didLoad: data)
             }

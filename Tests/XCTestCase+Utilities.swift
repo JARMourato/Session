@@ -7,7 +7,7 @@ extension XCTestCase {
         XCTAssertEqual(thrownError?.localizedDescription, (thrownError as? E)?.localizedDescription)
     }
 
-    func assert<T, E: Swift.Error & Equatable>(_ expression: @autoclosure () throws -> T, throws error: E, in file: StaticString = #file, line: UInt = #line) {
+    func assert(_ expression: @autoclosure () throws -> some Any, throws error: some Swift.Error & Equatable, in file: StaticString = #file, line: UInt = #line) {
         var thrownError: Swift.Error?
         XCTAssertThrowsError(try expression(), file: file, line: line) { thrownError = $0 }
         assert(thrownError: thrownError, is: error)

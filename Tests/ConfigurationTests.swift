@@ -31,7 +31,6 @@ final class ConfigurationTests: XCTestCase {
         let configurations: [Configuration] = [
             Disable.constrainedNetworkAccess,
             Disable.expensiveNetworkAccess,
-            Disable.waitingForConnectivity,
         ]
         // When
         let (sessionOne, _) = createSession(from: configurations)
@@ -39,10 +38,21 @@ final class ConfigurationTests: XCTestCase {
         // Then
         XCTAssertFalse(sessionOne.configuration.allowsConstrainedNetworkAccess)
         XCTAssertFalse(sessionOne.configuration.allowsExpensiveNetworkAccess)
-        XCTAssertFalse(sessionOne.configuration.waitsForConnectivity)
         XCTAssertTrue(sessionTwo.configuration.allowsConstrainedNetworkAccess)
         XCTAssertTrue(sessionTwo.configuration.allowsExpensiveNetworkAccess)
-        XCTAssertTrue(sessionTwo.configuration.waitsForConnectivity)
+    }
+
+    func test_configuration_of_flags_enabled() {
+        // Given
+        let configurations: [Configuration] = [
+            Enable.waitingForConnectivity,
+        ]
+        // When
+        let (sessionOne, _) = createSession(from: configurations)
+        let (sessionTwo, _) = createSession(from: [])
+        // Then
+        XCTAssertTrue(sessionOne.configuration.waitsForConnectivity)
+        XCTAssertFalse(sessionTwo.configuration.waitsForConnectivity)
     }
 
     func test_configuration_of_headers() {
@@ -102,7 +112,9 @@ final class ConfigurationTests: XCTestCase {
         let (sessionTwo, _) = createSession(from: [])
         // Then
         XCTAssertTrue(sessionOne.configuration.protocolClasses?.first == MockClass.self)
-        XCTAssertNil(sessionTwo.configuration.protocolClasses)
+        XCTAssertTrue(sessionOne.configuration.protocolClasses?.count == 1)
+        XCTAssertNotNil(sessionTwo.configuration.protocolClasses)
+        XCTAssertTrue(sessionTwo.configuration.protocolClasses?.contains(where: { $0 == MockClass.self }) == false)
     }
 
     func test_configuration_of_timeouts() {
