@@ -57,7 +57,8 @@ let session = Session {
 	// Turn off some default behaviors
 	Disable.constrainedNetworkAccess
 	Disable.expensiveNetworkAccess
-	Disable.waitingForConnectivity
+	// Turn on additional behavior
+	Enable.waitingForConnectivity
 	// Add session wide headers         
 	Headers(httpHeaders: [:])
 	// Set your own URLSessionConfiguration preset
@@ -65,7 +66,7 @@ let session = Session {
 	Preset.custom(/* Some URLSessionConfiguration object*/) 
 	Preset.ephemeral
 	// Set a mock or something... 
-	ProtocolClasses(classes: [])
+	ProtocolClasses(classes: [ /* some classes */ ])
 	// Override the default timeouts
 	Timeout.request(10)
 	Timeout.resource(60)
