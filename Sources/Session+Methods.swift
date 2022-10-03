@@ -120,6 +120,7 @@ extension Requestable {
 
 extension Session {
     static var disableConcurrency: Bool = false
+    static var disableTaskDelegate: Bool = false
 }
 
 protocol SessionTask: AnyObject {
@@ -130,14 +131,16 @@ protocol SessionTask: AnyObject {
 extension URLSessionTask: SessionTask {
     var taskDelegate: URLSessionTaskDelegate? {
         get {
-            if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *) {
-                return delegate
+            let del: URLSessionTaskDelegate?
+            if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableTaskDelegate {
+                del = delegate
             } else {
-                return nil
+                del = nil
             }
+            return del
         }
         set {
-            if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *) {
+            if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableTaskDelegate {
                 delegate = newValue
             }
         }

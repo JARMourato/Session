@@ -16,6 +16,28 @@ final class SessionMethodsTests: XCTestCase {
         Session.disableConcurrency = false
     }
 
+    // MARK: - Task Delegate Tests
+
+    func test_taskDelegate_helper() {
+        // Given
+        let request = mockURLRequest
+        let configuration = URLSessionConfiguration.default
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        // When
+        let taskOne: SessionTask = session.dataTask(with: request)
+        let taskTwo: SessionTask = session.dataTask(with: request)
+        taskTwo.taskDelegate = MockURLSessionTaskDelegate()
+        let delegateOne = taskOne.taskDelegate
+        let delegateTwo = taskTwo.taskDelegate
+        Session.disableTaskDelegate = true
+        let delegateThree = taskTwo.taskDelegate
+        // Then
+        XCTAssertNil(delegateOne)
+        XCTAssertNotNil(delegateTwo)
+        XCTAssertNil(delegateThree)
+    }
+
     // MARK: - Asyncify Tests
 
     func test_asyncify_data() async throws {
@@ -216,3 +238,7 @@ class MockURLProtocol: URLProtocol {
         }
     }
 }
+
+// MARK: - Mock URLSessionTaskDelegate
+
+class MockURLSessionTaskDelegate: NSObject, URLSessionTaskDelegate {}
