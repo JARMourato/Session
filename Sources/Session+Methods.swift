@@ -1,14 +1,13 @@
-import Foundation
+// Copyright © 2022 João Mourato. All rights reserved.
 
-public typealias DataResponse = (data: Data, urlResponse: URLResponse)
-public typealias DownloadResponse = (url: URL, urlResponse: URLResponse)
-public typealias UploadResponse = DataResponse
+import Foundation
+import RNP
 
 // MARK: - Data Task
 
 public extension Session {
     func data(for r: Requestable) async throws -> DataResponse {
-        let request = try r._makeURLRequest()
+        let request = try r._buildURLRequest()
         let response: DataResponse
 
         if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableConcurrency {
@@ -19,17 +18,13 @@ public extension Session {
 
         return response
     }
-
-    func dataResponse<R: Requestable>(for r: R) async throws -> Response<R, Data> {
-        Response(request: r, result: try await data(for: r))
-    }
 }
 
 // MARK: - Download Tasks
 
 public extension Session {
     func download(for r: Requestable) async throws -> DownloadResponse {
-        let request = try r._makeURLRequest()
+        let request = try r._buildURLRequest()
         let response: DownloadResponse
 
         if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableConcurrency {
@@ -58,7 +53,7 @@ public extension Session {
 
 public extension Session {
     func upload(for r: Requestable, fromFile fileURL: URL) async throws -> UploadResponse {
-        let request = try r._makeURLRequest()
+        let request = try r._buildURLRequest()
         let response: UploadResponse
 
         if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableConcurrency {
@@ -71,7 +66,7 @@ public extension Session {
     }
 
     func upload(for r: Requestable, fromData bodyData: Data) async throws -> UploadResponse {
-        let request = try r._makeURLRequest()
+        let request = try r._buildURLRequest()
         let response: UploadResponse
 
         if #available(iOS 15.0, macOS 12, tvOS 15.0, watchOS 6.0, *), !Session.disableConcurrency {
@@ -105,10 +100,10 @@ extension Session {
 }
 
 extension Requestable {
-    func _makeURLRequest() throws -> URLRequest {
+    func _buildURLRequest() throws -> URLRequest {
         let request: URLRequest
         do {
-            request = try makeURLRequest()
+            request = try buildURLRequest()
         } catch {
             throw SessionError.invalidRequest(rawError: error)
         }

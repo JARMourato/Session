@@ -1,3 +1,5 @@
+// Copyright © 2022 João Mourato. All rights reserved.
+
 import Foundation
 
 // MARK: - DSL Session Builder

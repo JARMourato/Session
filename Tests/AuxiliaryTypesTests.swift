@@ -1,3 +1,6 @@
+// Copyright © 2022 João Mourato. All rights reserved.
+
+import RNP
 @testable import Session
 import XCTest
 
@@ -10,19 +13,23 @@ final class AuxiliaryTypesTests: XCTestCase {
         // When
         let requestable: Requestable = urlRequest
         // Then
-        XCTAssertEqual(urlRequest, try requestable._makeURLRequest())
+        XCTAssertEqual(urlRequest, try requestable._buildURLRequest())
     }
 
     func test_invalid_make() {
         // Given
         enum CustomError: Error, Equatable { case invalidURL }
         struct InvalidMaker: Requestable {
-            func makeURLRequest() throws -> URLRequest {
+            var headers: RNP.Headers = .init()
+            var method: String = ""
+            var parameters: RNP.Parameters = .init()
+
+            func buildURLRequest() throws -> URLRequest {
                 throw CustomError.invalidURL
             }
         }
         // When
-        let makerExpression = { try InvalidMaker()._makeURLRequest() }
+        let makerExpression = { try InvalidMaker()._buildURLRequest() }
         // Then
         assert(try makerExpression(), throws: SessionError.invalidRequest(rawError: CustomError.invalidURL))
     }
