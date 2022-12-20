@@ -86,7 +86,7 @@ final class SessionMethodsTests: XCTestCase {
         let mData = requestResponse.data(using: .utf8)
         MockURLProtocol.requestHandler = { _ in (mResponse, mData) }
         // When
-        let response = try await session.dataResponse(for: request)
+        let response = try await session.response(for: request)
         // Then
         XCTAssertEqual(response.request, request)
         XCTAssertEqual((response.result.urlResponse as? HTTPURLResponse)?.url, mResponse.url)

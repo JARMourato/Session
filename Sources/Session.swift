@@ -3,7 +3,7 @@
 import Foundation
 import RNP
 
-public struct Session {
+public struct Session: RequestLoader {
     internal weak var taskDelegate: URLSessionTaskDelegate?
     internal var urlSession: URLSession!
 
