@@ -23,7 +23,7 @@ final class AuxiliaryTypesTests: XCTestCase {
             var headers: RNP.Headers = .init()
             var method: String = ""
             var parameters: RNP.Parameters = .init()
-            
+
             func buildURLRequest() throws -> URLRequest {
                 throw CustomError.invalidURL
             }
