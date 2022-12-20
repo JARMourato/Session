@@ -1,4 +1,7 @@
+// Copyright © 2022 João Mourato. All rights reserved.
+
 import Foundation
+import RNP
 
 public struct Session {
     internal weak var taskDelegate: URLSessionTaskDelegate?
@@ -19,19 +22,6 @@ extension Session {
 }
 
 // MARK: - Auxiliary Types
-
-public struct Response<Request: Requestable, Data> {
-    let request: Request
-    let result: DataResponse
-}
-
-public protocol Requestable {
-    func makeURLRequest() throws -> URLRequest
-}
-
-extension URLRequest: Requestable {
-    public func makeURLRequest() throws -> URLRequest { self }
-}
 
 public enum SessionError: Error {
     case invalidRequest(rawError: Error), invalidResponse

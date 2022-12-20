@@ -81,7 +81,7 @@ The library adds a syntax sugar by way of a `Requestable` protocol:
 
 ```swift
 public protocol Requestable {
-    func makeURLRequest() throws -> URLRequest
+    func buildURLRequest() throws -> URLRequest
 }
 ```
 
