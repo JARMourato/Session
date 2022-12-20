@@ -102,7 +102,7 @@ let urlResponse: URLResponse = response.urlResponse
 or if you want to get your `Requestable` paired with the response
 
 ```swift
-let response = try await session.dataResponse(for: requestable) 
+let response = try await session.response(for: requestable) 
 let request: some Requestable = response.request
 let data: Data = response.result.data
 let urlResponse: URLResponse = response.result.urlResponse
