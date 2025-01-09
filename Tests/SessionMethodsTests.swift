@@ -58,7 +58,7 @@ final class SessionMethodsTests: XCTestCase {
         let (url, response) = try await session.download(for: request)
         // Then
         XCTAssertEqual((response as? HTTPURLResponse)?.url, mResponse.url)
-        XCTAssertEqual(requestResponse, try String(contentsOf: url, encoding: .utf8))
+        XCTAssertEqual(requestResponse, try String(contentsOf: url))
     }
 
     func test_download_resume_task() async throws {
@@ -70,7 +70,7 @@ final class SessionMethodsTests: XCTestCase {
         let (url, response) = try await session.download(resumeFrom: Data())
         // Then
         XCTAssertEqual((response as? HTTPURLResponse)?.url, mResponse.url)
-        XCTAssertEqual(requestResponse, try String(contentsOf: url, encoding: .utf8))
+        XCTAssertEqual(requestResponse, try String(contentsOf: url))
     }
 
     // MARK: Upload
