@@ -7,8 +7,8 @@ import Foundation
 public extension Session {
     @resultBuilder
     enum Builder {
-        public static func buildArray(_ components: [[Configuration]]) -> [Configuration] { components.flatMap { $0 } }
-        public static func buildBlock(_ components: [Configuration]...) -> [Configuration] { components.flatMap { $0 } }
+        public static func buildArray(_ components: [[Configuration]]) -> [Configuration] { components.flatMap(\.self) }
+        public static func buildBlock(_ components: [Configuration]...) -> [Configuration] { components.flatMap(\.self) }
         public static func buildEither(first component: [Configuration]) -> [Configuration] { component }
         public static func buildEither(second component: [Configuration]) -> [Configuration] { component }
         public static func buildExpression(_ expression: Configuration) -> [Configuration] { [expression] }
