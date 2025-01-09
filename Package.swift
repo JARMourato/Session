@@ -10,7 +10,7 @@ let package = Package(
         .library(name: "Session", targets: ["Session"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/JARMourato/RNP.git", branch: "main"),
+        .package(url: "https://github.com/JARMourato/RNP.git", .upToNextMajor(from: "1.0.0")),
     ],
     targets: [
         .target(name: "Session", dependencies: ["RNP"], path: "Sources"),
