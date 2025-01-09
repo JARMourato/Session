@@ -84,7 +84,7 @@ public enum Timeout: Configuration {
 
 // MARK: - Session Creation
 
-internal func createSession(from configs: [Configuration]) -> (URLSession, URLSessionTaskDelegate?) {
+func createSession(from configs: [Configuration]) -> (URLSession, URLSessionTaskDelegate?) {
     // Set all user configurations override if needed
     let configuration = configs.urlSessionConfiguration
     configuration.overrideValueIfNeededFor(\.allowsConstrainedNetworkAccess, with: configs.allowsConstrainedNetworkAccess)
@@ -112,14 +112,14 @@ extension [Configuration] {
     var delegates: [Delegate] { compactMap { $0 as? Delegate } }
 
     var sessionDelegate: URLSessionDelegate? {
-        delegates.compactMap { delegate in
+        delegates.compactMap { (delegate: Delegate) -> URLSessionDelegate? in
             guard case let .session(sdel) = delegate else { return nil }
             return sdel
         }.first
     }
 
     var taskDelegate: URLSessionTaskDelegate? {
-        delegates.compactMap { delegate in
+        delegates.compactMap { (delegate: Delegate) -> URLSessionTaskDelegate? in
             guard case let .task(tdel) = delegate else { return nil }
             return tdel
         }.first
@@ -166,14 +166,14 @@ extension [Configuration] {
     var timeouts: [Timeout] { compactMap { $0 as? Timeout } }
 
     var timeoutIntervalForRequest: TimeInterval? {
-        timeouts.compactMap { timeout in
+        timeouts.compactMap { (timeout: Timeout) -> TimeInterval? in
             guard case let .request(seconds) = timeout else { return nil }
             return TimeInterval(seconds)
         }.first
     }
 
     var timeoutIntervalForResource: TimeInterval? {
-        timeouts.compactMap { timeout in
+        timeouts.compactMap { (timeout: Timeout) -> TimeInterval? in
             guard case let .resource(seconds) = timeout else { return nil }
             return TimeInterval(seconds)
         }.first
@@ -200,7 +200,7 @@ extension Preset {
 
 // MARK: Defaults
 
-internal enum ConfigDefaults {
+enum ConfigDefaults {
     static var timeoutIntervalForRequest: TimeInterval { 60 }
     static var timeoutIntervalForResource: TimeInterval { 604_800 } // 7 days
 }

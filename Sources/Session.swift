@@ -4,8 +4,8 @@ import Foundation
 import RNP
 
 public struct Session: RequestLoader {
-    internal weak var taskDelegate: URLSessionTaskDelegate?
-    internal var urlSession: URLSession!
+    weak var taskDelegate: URLSessionTaskDelegate?
+    var urlSession: URLSession!
 
     // MARK: Initialization
 
@@ -31,11 +31,11 @@ extension SessionError: Equatable {
     public static func == (lhs: SessionError, rhs: SessionError) -> Bool {
         switch (lhs, rhs) {
         case (.invalidResponse, .invalidResponse):
-            return true
+            true
         case let (.invalidRequest(lhsError), .invalidRequest(rhsError)):
-            return lhsError.localizedDescription == rhsError.localizedDescription
+            lhsError.localizedDescription == rhsError.localizedDescription
         default:
-            return false
+            false
         }
     }
 }

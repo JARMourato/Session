@@ -16,7 +16,7 @@ final class ConfigurationTests: XCTestCase {
 
     func test_configuration_of_delegates() {
         // Given
-        class MockDelegate: NSObject, URLSessionDelegate, URLSessionTaskDelegate {}
+        class MockDelegate: NSObject, URLSessionDelegate, URLSessionTaskDelegate, @unchecked Sendable {}
         let delegate = MockDelegate()
         let configurations: [Configuration] = [Delegate.session(delegate), Delegate.task(delegate)]
         // When

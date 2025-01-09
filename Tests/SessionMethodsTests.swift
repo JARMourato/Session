@@ -8,14 +8,6 @@ final class SessionMethodsTests: XCTestCase {
     var mockURLRequest: URLRequest { URLRequest(url: mockURL) }
     let requestResponse = "Success"
 
-    override func setUp() {
-        Session.disableConcurrency = false
-    }
-
-    override class func tearDown() {
-        Session.disableConcurrency = false
-    }
-
     // MARK: - Task Delegate Tests
 
     func test_taskDelegate_helper() {
@@ -30,49 +22,9 @@ final class SessionMethodsTests: XCTestCase {
         taskTwo.taskDelegate = MockURLSessionTaskDelegate()
         let delegateOne = taskOne.taskDelegate
         let delegateTwo = taskTwo.taskDelegate
-        Session.disableTaskDelegate = true
-        let delegateThree = taskTwo.taskDelegate
         // Then
         XCTAssertNil(delegateOne)
         XCTAssertNotNil(delegateTwo)
-        XCTAssertNil(delegateThree)
-    }
-
-    // MARK: - Asyncify Tests
-
-    func test_asyncify_data() async throws {
-        // Given
-        let mResponse = HTTPURLResponse(url: mockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
-        let mData = requestResponse.data(using: .utf8)
-        let mockSessionTask = MockURLSessionTask(data: mData, response: mResponse, error: nil)
-        // When
-        let (data, response) = try await session.asyncify { mockSessionTask.executeWith(completionHandler: $0) }
-        // Then
-        XCTAssertEqual(String(data: data, encoding: .utf8), requestResponse)
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
-    }
-
-    func test_asyncify_error() async throws {
-        // Given
-        enum MockError: Equatable, Error {
-            case failed
-        }
-        let mockSessionTask = MockURLSessionTask(data: nil, response: nil, error: MockError.failed)
-        do { // When
-            _ = try await session.asyncify { mockSessionTask.executeWith(completionHandler: $0) }
-        } catch { // Then
-            assert(thrownError: error, is: MockError.failed)
-        }
-    }
-
-    func test_asyncify_invalid() async throws {
-        // Given
-        let mockSessionTask = MockURLSessionTask(data: nil, response: nil, error: nil)
-        do { // When
-            _ = try await session.asyncify { mockSessionTask.executeWith(completionHandler: $0) }
-        } catch { // Then
-            assert(thrownError: error, is: SessionError.invalidResponse)
-        }
     }
 
     // MARK: - Task Methods With Session Concurrency Enabled
@@ -106,7 +58,7 @@ final class SessionMethodsTests: XCTestCase {
         let (url, response) = try await session.download(for: request)
         // Then
         XCTAssertEqual((response as? HTTPURLResponse)?.url, mResponse.url)
-        XCTAssertEqual(requestResponse, try String(contentsOf: url))
+        XCTAssertEqual(requestResponse, try String(contentsOf: url, encoding: .utf8))
     }
 
     func test_download_resume_task() async throws {
@@ -118,7 +70,7 @@ final class SessionMethodsTests: XCTestCase {
         let (url, response) = try await session.download(resumeFrom: Data())
         // Then
         XCTAssertEqual((response as? HTTPURLResponse)?.url, mResponse.url)
-        XCTAssertEqual(requestResponse, try String(contentsOf: url))
+        XCTAssertEqual(requestResponse, try String(contentsOf: url, encoding: .utf8))
     }
 
     // MARK: Upload
@@ -147,39 +99,6 @@ final class SessionMethodsTests: XCTestCase {
         // Then
         XCTAssertEqual((response as? HTTPURLResponse)?.url, mResponse.url)
         XCTAssertEqual(String(data: data, encoding: .utf8), requestResponse)
-    }
-
-    // MARK: - Task Methods With Session Concurrency Disabled
-
-    // MARK: Data
-
-    func test_data_task_asyncify() async throws {
-        Session.disableConcurrency = true
-        try await test_data_task()
-    }
-
-    // MARK: Download
-
-    func test_download_task_asyncify() async throws {
-        Session.disableConcurrency = true
-        try await test_download_task()
-    }
-
-    func test_download_resume_task_asyncify() async throws {
-        Session.disableConcurrency = true
-        try await test_download_resume_task()
-    }
-
-    // MARK: Upload
-
-    func test_upload_from_data_task_asyncify() async throws {
-        Session.disableConcurrency = true
-        try await test_upload_from_data_task()
-    }
-
-    func test_upload_from_url_task_asyncify() async throws {
-        Session.disableConcurrency = true
-        try await test_upload_from_url_task()
     }
 }
 
@@ -210,7 +129,7 @@ class MockURLSessionTask: SessionTask {
 // MARK: - Mock URLProtocol
 
 class MockURLProtocol: URLProtocol {
-    static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data?))?
+    nonisolated(unsafe) static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data?))?
 
     override class func canInit(with _: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -241,4 +160,4 @@ class MockURLProtocol: URLProtocol {
 
 // MARK: - Mock URLSessionTaskDelegate
 
-class MockURLSessionTaskDelegate: NSObject, URLSessionTaskDelegate {}
+class MockURLSessionTaskDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {}

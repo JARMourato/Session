@@ -21,7 +21,7 @@ final class AuxiliaryTypesTests: XCTestCase {
         enum CustomError: Error, Equatable { case invalidURL }
         struct InvalidMaker: Requestable {
             var headers: RNP.Headers = .init()
-            var method: String = ""
+            var method: HTTPMethod = .get
             var parameters: RNP.Parameters = .init()
 
             func buildURLRequest() throws -> URLRequest {
@@ -31,7 +31,7 @@ final class AuxiliaryTypesTests: XCTestCase {
         // When
         let makerExpression = { try InvalidMaker()._buildURLRequest() }
         // Then
-        assert(try makerExpression(), throws: SessionError.invalidRequest(rawError: CustomError.invalidURL))
+        try assert(makerExpression(), throws: SessionError.invalidRequest(rawError: CustomError.invalidURL))
     }
 
     // MARK: SessionError conformance to Equatable
